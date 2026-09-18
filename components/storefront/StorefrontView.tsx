@@ -79,7 +79,25 @@ export function StorefrontView({ dishes }: StorefrontViewProps) {
 }
 
 function DishCard({ dish, featured = false }: { dish: CustomerDishView; featured?: boolean }) {
-  const { addItem } = useCart();
+  const { addItem, clearCart } = useCart();
+
+  const handleAdd = () => {
+    try {
+      addItem(dish);
+    } catch (err: any) {
+      if (err.message === 'SINGLE_PROVIDER_ONLY') {
+        const confirmClear = window.confirm(
+          'Solo puedes pedir platos de una misma cocina por pedido. ¿Deseas vaciar tu carrito actual y comenzar un pedido nuevo con este plato?'
+        );
+        if (confirmClear) {
+          clearCart();
+          setTimeout(() => addItem(dish), 100);
+        }
+      } else {
+        alert('Hubo un error al agregar el plato.');
+      }
+    }
+  };
 
   return (
     <div className={`bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex ${featured ? 'flex-col min-w-[280px] snap-center' : 'flex-row'}`}>
@@ -94,7 +112,7 @@ function DishCard({ dish, featured = false }: { dish: CustomerDishView; featured
         <div className="mt-4 flex items-center justify-between">
           <span className="font-bold text-gray-900">${dish.finalPrice.toLocaleString()}</span>
           <button
-            onClick={() => addItem(dish)}
+            onClick={handleAdd}
             className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-sm font-medium hover:bg-orange-200 transition"
           >
             + Agregar

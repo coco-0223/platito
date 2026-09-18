@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { CartProvider } from "@/components/cart/CartProvider";
+import { RoleProvider } from "@/lib/context/RoleContext";
+import { RoleSwitcher } from "@/components/shared/RoleSwitcher";
 
 export const metadata: Metadata = {
   title: "Platito - Marketplace Gastronómico",
@@ -15,7 +17,12 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className="min-h-screen bg-slate-50 text-slate-900 antialiased">
-        <CartProvider>{children}</CartProvider>
+        <RoleProvider>
+          <CartProvider>
+            {children}
+            <RoleSwitcher />
+          </CartProvider>
+        </RoleProvider>
       </body>
     </html>
   );

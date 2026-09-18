@@ -21,6 +21,7 @@ export interface Dish {
 
 export interface CustomerDishView {
   id: string;
+  providerId: string;
   name: string;
   description: string;
   category: string;

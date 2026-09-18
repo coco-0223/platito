@@ -1,5 +1,6 @@
 export interface CartItem {
   dishId: string;
+  providerId: string;
   name: string;
   description?: string;
   imageUrl?: string;
@@ -27,7 +28,7 @@ export interface CartContextValue {
   deliveryFee: number;
   total: number;
   addItem: (
-    dish: { id: string; name: string; description?: string; imageUrl?: string; finalPrice: number },
+    dish: { id: string; providerId: string; name: string; description?: string; imageUrl?: string; finalPrice: number },
     quantity?: number
   ) => void;
   removeItem: (dishId: string) => void;

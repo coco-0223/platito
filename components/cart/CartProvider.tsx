@@ -9,10 +9,18 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
 
   const addItem = (
-    dish: { id: string; name: string; description?: string; imageUrl?: string; finalPrice: number },
+    dish: { id: string; providerId: string; name: string; description?: string; imageUrl?: string; finalPrice: number },
     quantity = 1
   ) => {
     setItems((prev) => {
+      // Regla de Proveedor Único (Single-Provider Cart)
+      if (prev.length > 0) {
+        const currentProviderId = prev[0].providerId;
+        if (currentProviderId !== dish.providerId) {
+          throw new Error('SINGLE_PROVIDER_ONLY');
+        }
+      }
+
       const existing = prev.find((item) => item.dishId === dish.id);
       if (existing) {
         return prev.map((item) =>
@@ -25,6 +33,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         ...prev,
         {
           dishId: dish.id,
+          providerId: dish.providerId,
           name: dish.name,
           description: dish.description,
           imageUrl: dish.imageUrl,

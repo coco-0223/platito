@@ -252,6 +252,7 @@ export class DishService implements IDishService {
         const finalPrice = calculateFinalPrice(dish.baseCost, markupPct);
         return {
           id: dish.id,
+          providerId: dish.providerId,
           name: dish.name,
           description: dish.description,
           category: dish.category,
