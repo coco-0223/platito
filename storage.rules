@@ -1,0 +1,22 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Dishes images folder
+    match /dishes/{dishId}/{filename} {
+      // Public read for customer vitrina
+      allow read: if true;
+
+      // Strict enforcement of 1 MB size limit and image MIME types
+      allow write: if request.resource.size <= 1048576
+                   && request.resource.contentType.matches('image/(jpeg|png|webp|jpg)');
+    }
+
+    // Root dishes folder fallback
+    match /dishes/{filename} {
+      allow read: if true;
+      allow write: if request.resource.size <= 1048576
+                   && request.resource.contentType.matches('image/(jpeg|png|webp|jpg)');
+    }
+  }
+}

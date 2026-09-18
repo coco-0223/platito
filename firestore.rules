@@ -1,0 +1,66 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isValidDish(dish) {
+      return dish.name is string && dish.name.size() >= 2 && dish.name.size() <= 100
+          && dish.description is string && dish.description.size() <= 1000
+          && dish.category is string && dish.category.size() >= 2
+          && dish.baseCost is number && dish.baseCost > 0 && dish.baseCost <= 10000000
+          && dish.available is bool
+          && dish.imageUrl is string && dish.imageUrl.size() > 0
+          && dish.providerId is string && dish.providerId.size() >= 2
+          && dish.createdAt is number
+          && dish.updatedAt is number;
+    }
+
+    function isValidOrder(order) {
+      return order.customer is map
+          && order.customer.name is string && order.customer.name.size() >= 2 && order.customer.name.size() <= 100
+          && order.customer.phone is string && order.customer.phone.size() >= 6 && order.customer.phone.size() <= 30
+          && order.customer.address is string && order.customer.address.size() >= 5 && order.customer.address.size() <= 200
+          && order.items is list && order.items.size() > 0 && order.items.size() <= 50
+          && order.total is number && order.total > 0
+          && order.status == 'PENDING_DELIVERY'
+          && order.createdAt is number;
+    }
+
+    // 1. Dishes Collection
+    match /dishes/{dishId} {
+      // Vitrina allows public read so anonymous customers can view dishes
+      allow read: if true;
+
+      // Provider dish creation with schema validation
+      allow create: if isValidDish(request.resource.data);
+
+      // Provider dish updates (price, availability, details)
+      allow update: if isValidDish(request.resource.data);
+
+      // Provider dish deletion
+      allow delete: if true;
+    }
+
+    // 2. Orders Collection
+    match /orders/{orderId} {
+      // Anonymous customer creates simulated order
+      allow create: if isValidOrder(request.resource.data);
+
+      // Platform owner / logistics reads orders
+      allow read: if true;
+
+      // Only status and updatedAt updates are permitted after placement
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt'])
+                    && request.resource.data.status in ['PENDING_DELIVERY', 'CONFIRMED', 'DELIVERED'];
+
+      // Orders cannot be deleted to preserve logistics records
+      allow delete: if false;
+    }
+
+    // 3. Platform Settings (Singleton)
+    match /platform_settings/{configId} {
+      allow read: if true;
+      allow write: if request.resource.data.markupPercentage is number
+                   && request.resource.data.markupPercentage >= 0;
+    }
+  }
+}
