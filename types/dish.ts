@@ -6,13 +6,31 @@ export type DishCategory =
   | 'bebidas'
   | 'promociones';
 
+export interface Ingredient {
+  id: string;
+  providerId: string;
+  name: string;
+  cost: number;
+}
+
+export interface DishIngredient {
+  ingredientId: string;
+  quantity: number;
+}
+
 export interface Dish {
   id: string;
   providerId: string;
   name: string;
   description: string;
   category: string;
-  baseCost: number;
+  
+  productionCost: number;
+  profitMargin: number;
+  baseCost: number; // Precio de venta del negocio
+
+  ingredients?: DishIngredient[];
+  
   available: boolean;
   imageUrl: string;
   createdAt: number;
