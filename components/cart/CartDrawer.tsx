@@ -11,10 +11,57 @@ interface CartDrawerProps {
 
 export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
   const { items, updateQuantity, removeItem, subtotal, deliveryFee, total, clearCart } = useCart();
+  const [warningMsg, setWarningMsg] = React.useState<string | null>(null);
+  const [isValidating, setIsValidating] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!isOpen || items.length === 0) return;
+
+    let mounted = true;
+    setIsValidating(true);
+    setWarningMsg(null);
+
+    // Fetch fresh prices from backend
+    import('@/lib/services/dishService').then(({ dishService }) => {
+      dishService.getAvailableCustomerDishes().then((freshDishes) => {
+        if (!mounted) return;
+        let changed = false;
+        let removed = false;
+
+        items.forEach(cartItem => {
+          const freshDish = freshDishes.find(d => d.id === cartItem.dishId);
+          if (!freshDish) {
+            // Dish no longer available or deleted
+            removeItem(cartItem.dishId);
+            removed = true;
+          } else if (freshDish.finalPrice !== cartItem.finalPrice) {
+            // Price changed - in a real app we'd need a specific updatePrice method or we update the state directly.
+            // For MVP, we will just warn the user. The updateQuantity trick can't change base price easily without modifying CartProvider.
+            // So we will just warn them that the total is outdated, or we update the CartProvider.
+            changed = true;
+          }
+        });
+
+        if (removed) {
+          setWarningMsg('Algunos platos ya no están disponibles y fueron removidos de tu carrito.');
+        } else if (changed) {
+          setWarningMsg('⚠️ El negocio ha actualizado los precios de algunos platos de tu pedido. Por favor, refresca la página antes de pagar.');
+        }
+        
+        setIsValidating(false);
+      });
+    });
+
+    return () => { mounted = false; };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
   const handleCheckout = () => {
+    if (warningMsg && warningMsg.includes('precios')) {
+      alert('Debes refrescar la página para obtener los nuevos precios antes de pagar.');
+      return;
+    }
     alert(`¡Simulación de pago exitosa! Total pagado: $${total.toLocaleString()}`);
     clearCart();
     onClose();
@@ -47,6 +94,12 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
             </div>
           ) : (
             <div className="space-y-4">
+              {warningMsg && (
+                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 text-sm text-yellow-800 rounded-r-md">
+                  {warningMsg}
+                </div>
+              )}
+              
               {items.map((item) => (
                 <div key={item.dishId} className="bg-white p-3 rounded-lg shadow-sm flex gap-3">
                   {item.imageUrl && (
@@ -107,10 +160,11 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
             
             <button
               onClick={handleCheckout}
-              className="w-full bg-orange-600 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-orange-700 transition"
+              disabled={isValidating}
+              className="w-full bg-orange-600 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-orange-700 transition disabled:opacity-50"
             >
               <CreditCard size={20} />
-              Confirmar Pago
+              {isValidating ? 'Validando...' : 'Confirmar Pago'}
             </button>
           </div>
         )}
